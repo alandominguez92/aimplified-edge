@@ -1,0 +1,16 @@
+.venv/
+__pycache__/
+*.pyc
+.env
+*.db
+*.db-*
+dev.log
+jobs.log
+
+# Compiled C++ engine (rebuild with engine/build.ps1)
+engine/kelly_engine.exe
+engine/*.o
+
+# Generated ML artifacts — regenerate with the app.ml.* pipeline (see README)
+data/
+models/

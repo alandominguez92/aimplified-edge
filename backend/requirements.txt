@@ -1,0 +1,15 @@
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+httpx==0.28.1
+pydantic==2.10.4
+python-dotenv==1.0.1
+
+# ML projection engine
+scikit-learn==1.6.1
+pandas==2.2.3
+joblib==1.4.2
+
+# Statcast feature build only (offline; not needed to serve). Pulls whiff% from
+# Baseball Savant. pybaseball's FanGraphs scrapers are currently broken (403);
+# we use its Savant arsenal-stats leaderboard.
+pybaseball==2.2.7

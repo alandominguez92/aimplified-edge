@@ -1,0 +1,28 @@
+# Keep the build context lean and never ship secrets or local-only artifacts.
+# NOTE: this is independent of .gitignore — models/ and data/statcast_whiff.csv
+# are intentionally NOT excluded (they're bundled into the image).
+
+**/.venv
+**/__pycache__
+**/*.pyc
+**/node_modules
+**/.env
+**/dev.log
+**/jobs.log
+
+# local SQLite (a fresh DB is created at runtime under DATA_DIR)
+backend/data.db
+backend/data.db-*
+
+# large training CSV — not needed at runtime (only statcast_whiff.csv is)
+backend/data/training.csv
+
+# Windows-built binary — recompiled for Linux in the image
+backend/engine/kelly_engine.exe
+backend/engine/*.o
+
+# frontend build is produced inside the image (stage 1)
+frontend/dist
+
+.git
+.gitignore

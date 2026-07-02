@@ -1,0 +1,18 @@
+# Render blueprint (https://render.com). One Docker web service serves the API
+# and the built frontend. Set SPORTSGAMEODDS_API_KEY as a secret in the dashboard.
+services:
+  - type: web
+    name: aimplified-edge
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /api/health
+    envVars:
+      - key: SPORTSGAMEODDS_API_KEY
+        sync: false          # set in the dashboard (never committed)
+    # Persistent storage for the track record / line snapshots. Requires a paid
+    # instance type — omit this block on the free tier (DB is then ephemeral).
+    disk:
+      name: data
+      mountPath: /data
+      sizeGB: 1
