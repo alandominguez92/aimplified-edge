@@ -11,6 +11,6 @@ jobs.log
 engine/kelly_engine.exe
 engine/*.o
 
-# Generated ML artifacts — regenerate with the app.ml.* pipeline (see README)
-data/
-models/
+# Trained models + Statcast table are COMMITTED so GitHub/CI builds bundle the
+# ML model (small, ~4 MB). The large training CSV stays out (regenerable).
+data/training.csv

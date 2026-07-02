@@ -1,0 +1,22 @@
+{
+  "rows": 6197,
+  "test_rows": 1240,
+  "mae_model_median": 1.818,
+  "mae_baseline_recent5": 1.904,
+  "mae_baseline_rate": 1.836,
+  "improvement_vs_recent_pct": 4.5,
+  "improvement_vs_rate_pct": 1.0,
+  "interval_coverage_raw": 0.794,
+  "interval_coverage_cqr": 0.914,
+  "cqr_widen": 0.993,
+  "features": [
+    "k9",
+    "ip_per_start",
+    "recent_k",
+    "games_started",
+    "opp_k_rate",
+    "park_factor",
+    "is_home",
+    "whiff_prev"
+  ]
+}
