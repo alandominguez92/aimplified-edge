@@ -9,6 +9,11 @@ primary_region = 'lax'
 [build]
   dockerfile = 'Dockerfile'
 
+[env]
+  # uvicorn binds ${PORT:-8000}; set PORT to match http_service.internal_port
+  # (8080) so Fly routes to the port the app is actually listening on.
+  PORT = '8080'
+
 [[mounts]]
   source = 'data'
   destination = '/data'
