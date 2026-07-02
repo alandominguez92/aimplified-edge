@@ -1,10 +1,10 @@
-# fly.toml app configuration file generated for aimplified-edge on 2026-07-02T17:34:59Z
+# fly.toml app configuration file generated for aimplified-edge-ai on 2026-07-02T18:19:11Z
 #
 # See https://fly.io/docs/reference/configuration/ for information about how to use this file.
 #
 
-app = 'aimplified-edge'
-primary_region = 'lax'
+app = 'aimplified-edge-ai'
+primary_region = 'sjc'
 
 [build]
   dockerfile = 'Dockerfile'
