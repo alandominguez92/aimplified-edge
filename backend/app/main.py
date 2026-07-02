@@ -36,6 +36,8 @@ async def _scheduler() -> None:
 
     Enabled with RUN_SCHEDULER=1; interval via SCHEDULER_HOURS (default 3)."""
     interval = int(os.getenv("SCHEDULER_HOURS", "3")) * 3600
+    # Let uvicorn bind + pass Fly's health check before the first (heavy) run.
+    await asyncio.sleep(30)
     while True:
         try:
             await daily_job()
