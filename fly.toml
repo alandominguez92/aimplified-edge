@@ -1,25 +1,25 @@
-# Fly.io config for the AimplifiedEdge backend (single Docker service:
-# FastAPI serves the API + the built frontend). Region + always-on per setup.
-app = "aimplified-edge"
-primary_region = "sjc"
+# fly.toml app configuration file generated for aimplified-edge on 2026-07-02T17:34:59Z
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
+app = 'aimplified-edge'
+primary_region = 'lax'
 
 [build]
-  dockerfile = "Dockerfile"
+  dockerfile = 'Dockerfile'
+
+[[mounts]]
+  source = 'data'
+  destination = '/data'
 
 [http_service]
-  internal_port = 8000
+  internal_port = 8080
   force_https = true
-  # always-on: keep one machine running so the daily scheduler accrues the
-  # track record 24/7 and there are no cold starts.
-  auto_stop_machines = false
+  auto_stop_machines = 'off'
   auto_start_machines = true
   min_machines_running = 1
 
 [[vm]]
-  size = "shared-cpu-1x"
-  memory = "512mb"
-
-# Persistent SQLite (track record + line snapshots) at DATA_DIR=/data.
-[[mounts]]
-  source = "data"
-  destination = "/data"
+  size = 'shared-cpu-1x'
+  memory = '512mb'
