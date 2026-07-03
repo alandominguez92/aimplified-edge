@@ -31,7 +31,10 @@ BOOK_ORDER = ["FanDuel", "DraftKings", "Caesars", "ESPN BET", "BetMGM", "Bovada"
 # slate is cached briefly (60s) so frequent polling doesn't re-hit SportsGameOdds
 # (protecting the free-tier budget) and so line snapshots accrue at ~60s cadence.
 _RAW_TTL = 600.0
-_SLATE_TTL = 60.0
+# Assembled-slate cache. This is the real SportsGameOdds budget guard: the SGO
+# feed is only re-fetched when this expires, no matter how often clients poll.
+# 5 min keeps the free tier comfortable while lines stay reasonably fresh.
+_SLATE_TTL = 300.0
 _raw_cache: dict[tuple[str, int], tuple[float, list[dict]]] = {}
 _slate_cache: dict[str, tuple[float, list["PitcherProp"]]] = {}
 

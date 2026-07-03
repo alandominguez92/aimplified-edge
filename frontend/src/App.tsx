@@ -19,9 +19,10 @@ import { LastUpdated } from "./components/LastUpdated.tsx";
 import { TrackRecord } from "./components/TrackRecord.tsx";
 import { TrackRecordChart } from "./components/TrackRecordChart.tsx";
 
-// Poll cadence. The backend caches the slate ~60s, so this matches its refresh
-// rate without hammering the SportsGameOdds free-tier budget.
-const POLL_MS = 60_000;
+// Poll cadence. The backend caches the slate ~5 min (the real SGO budget guard),
+// so polling faster just re-reads that cache. 3 min keeps the "updated Xs ago"
+// indicator honest while staying easy on the free tier; hidden tabs pause.
+const POLL_MS = 180_000;
 
 function gameKey(p: PitcherProp): string {
   return [p.team, p.opponent].sort().join("-");

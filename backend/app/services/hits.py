@@ -20,7 +20,7 @@ from . import mlb_statsapi
 from .slate import _build_books, _consensus_line, _sharp_signal, _slug
 from .sportsgameodds import _initial_last, fetch_hits_slate, normalize_name
 
-_HITS_TTL = 60.0
+_HITS_TTL = 300.0  # SGO budget guard (see slate._SLATE_TTL); re-fetch odds every 5 min
 _STATS_TTL = 3600.0
 # The hits board is curated to the hottest bats: rank the day's batters by their
 # batting average over the trailing window and keep the top N. A minimum window
