@@ -34,8 +34,10 @@ def _today() -> str:
 async def _scheduler() -> None:
     """In-process daily job for hosted deploys (replaces the Windows task).
 
-    Enabled with RUN_SCHEDULER=1; interval via SCHEDULER_HOURS (default 3)."""
-    interval = int(os.getenv("SCHEDULER_HOURS", "3")) * 3600
+    Enabled with RUN_SCHEDULER=1; interval via SCHEDULER_HOURS (default 12).
+    12h = ~2 runs/day, which keeps the SportsGameOdds free-tier object budget
+    in check while still capturing an open + closing line snapshot per pick."""
+    interval = int(os.getenv("SCHEDULER_HOURS", "12")) * 3600
     # Let uvicorn bind + pass Fly's health check before the first (heavy) run.
     await asyncio.sleep(30)
     while True:
