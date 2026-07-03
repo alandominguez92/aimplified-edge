@@ -115,4 +115,6 @@ export interface PitcherProp {
   books: BookOdds[];
   projection: Projection;
   sharp: SharpSignal;
+  l10Avg?: number | null; // hits board: trailing 10-day batting average
+  l10Line?: string | null; // hits board: "16/34" over the last 10 days
 }

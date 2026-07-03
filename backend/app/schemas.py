@@ -75,3 +75,6 @@ class PitcherProp(CamelModel):
     books: list[BookOdds]
     projection: Projection
     sharp: SharpSignal
+    # Hits board only: trailing 10-day form driving the "hottest bats" ranking.
+    l10_avg: Optional[float] = None
+    l10_line: Optional[str] = None  # e.g. "16/34"

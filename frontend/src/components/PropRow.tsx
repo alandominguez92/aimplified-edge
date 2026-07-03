@@ -48,6 +48,9 @@ export function PropRow({ prop, selected, onSelect, onPick, isPicked }: Props) {
             {prop.market !== "hits" && (
               <span className="text-[10px] text-neutral">(P)</span>
             )}
+            {prop.market === "hits" && prop.l10Avg != null && (
+              <HotBadge avg={prop.l10Avg} line={prop.l10Line} />
+            )}
             <SharpSignalBadge sharp={prop.sharp} />
           </div>
           <div className="text-[11px] text-ink-dim">
@@ -116,6 +119,19 @@ function EvCell({ prop }: { prop: PitcherProp }) {
         {fmtSignedPct(ev.evPct, 0)}
       </span>
       <span className="tabular text-[10px] text-ink-dim">{fmtOdds(ev.odds)}</span>
+    </span>
+  );
+}
+
+function HotBadge({ avg, line }: { avg: number; line?: string | null }) {
+  // baseball AVG convention: ".471", no leading zero
+  const shown = avg.toFixed(3).replace(/^0/, "");
+  return (
+    <span
+      title={`Hot: ${line ?? ""} over the last 10 days (${shown} AVG)`.trim()}
+      className="tabular inline-flex items-center gap-0.5 rounded bg-edge/10 px-1 py-0.5 text-[9px] font-semibold text-edge ring-1 ring-edge/25 cursor-help"
+    >
+      🔥 L10 {shown}
     </span>
   );
 }
