@@ -8,10 +8,10 @@ from __future__ import annotations
 import asyncio
 import os
 from contextlib import asynccontextmanager
-from datetime import date as date_cls
+from datetime import date as date_cls, datetime, timezone
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
@@ -21,8 +21,16 @@ from .engine import cpp_kelly, ml_projection
 from .jobs.daily import main as daily_job
 from .schemas import ParlayLeg, PitcherProp
 from .services import results
-from .services.hits import build_hits_slate
-from .services.slate import build_slate
+from .services.hits import build_hits_slate, hits_odds_as_of
+from .services.slate import build_slate, slate_odds_as_of
+
+
+def _set_odds_freshness(response: Response, as_of: float | None) -> None:
+    """Tell the client whether the odds are a stale fallback (and from when)."""
+    if as_of is not None:
+        response.headers["X-Odds-As-Of"] = (
+            datetime.fromtimestamp(as_of, tz=timezone.utc).isoformat()
+        )
 
 settings = get_settings()
 
@@ -73,6 +81,7 @@ app.add_middleware(
     allow_origin_regex=r"https://.*\.pages\.dev",
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["X-Odds-As-Of"],  # let the browser read the stale-odds flag
 )
 
 
@@ -109,16 +118,22 @@ def sports() -> list[dict]:
 
 @app.get("/api/mlb/props", response_model=list[PitcherProp])
 async def mlb_props(
+    response: Response,
     date: str = Query(default_factory=lambda: date_cls.today().isoformat()),
 ) -> list[PitcherProp]:
-    return await build_slate(date, settings.mlb_season)
+    props = await build_slate(date, settings.mlb_season)
+    _set_odds_freshness(response, slate_odds_as_of(date))
+    return props
 
 
 @app.get("/api/mlb/hits", response_model=list[PitcherProp])
 async def mlb_hits(
+    response: Response,
     date: str = Query(default_factory=lambda: date_cls.today().isoformat()),
 ) -> list[PitcherProp]:
-    return await build_hits_slate(date, settings.mlb_season)
+    props = await build_hits_slate(date, settings.mlb_season)
+    _set_odds_freshness(response, hits_odds_as_of(date))
+    return props
 
 
 @app.get("/api/mlb/props/{prop_id}", response_model=PitcherProp)

@@ -34,7 +34,8 @@ export function App() {
   const [props, setProps] = useState<PitcherProp[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [source, setSource] = useState<"live" | "mock">("live");
+  const [source, setSource] = useState<"live" | "mock" | "stale">("live");
+  const [oddsAsOf, setOddsAsOf] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<number | null>(null);
   const [record, setRecord] = useState<TrackRecordType | null>(null);
   const [history, setHistory] = useState<PickHistoryPoint[]>([]);
@@ -53,6 +54,7 @@ export function App() {
       const result = await getSlate(market);
       setProps(result.props);
       setSource(result.source);
+      setOddsAsOf(result.asOf ?? null);
       // keep selection if it's still on the board, else jump to the first row
       setSelectedId((cur) =>
         result.props.some((p) => p.id === cur) ? cur : result.props[0]?.id,
@@ -156,19 +158,43 @@ export function App() {
               refreshing={refreshing}
               onRefresh={() => load(false)}
             />
-            <span
-              title={
-                source === "live"
-                  ? "Live data from MLB StatsAPI + SportsGameOdds via the backend"
-                  : "Backend unreachable — showing bundled mock slate"
-              }
-              className={[
-                "rounded px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide",
-                source === "live" ? "bg-edge/15 text-edge" : "bg-risk/15 text-risk",
-              ].join(" ")}
-            >
-              {source === "live" ? "● live data" : "● mock data"}
-            </span>
+            {(() => {
+              const staleTime = oddsAsOf
+                ? new Date(oddsAsOf).toLocaleTimeString([], {
+                    hour: "numeric",
+                    minute: "2-digit",
+                  })
+                : "";
+              const cfg = {
+                live: {
+                  cls: "bg-edge/15 text-edge",
+                  label: "● live data",
+                  title:
+                    "Live data from MLB StatsAPI + SportsGameOdds via the backend",
+                },
+                stale: {
+                  cls: "bg-warn/15 text-warn",
+                  label: `● stale odds · as of ${staleTime}`,
+                  title: `Odds feed unavailable (rate-limited) — showing last-known lines from ${staleTime}. Projections are still live.`,
+                },
+                mock: {
+                  cls: "bg-risk/15 text-risk",
+                  label: "● mock data",
+                  title: "Backend unreachable — showing bundled mock slate",
+                },
+              }[source];
+              return (
+                <span
+                  title={cfg.title}
+                  className={[
+                    "rounded px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide",
+                    cfg.cls,
+                  ].join(" ")}
+                >
+                  {cfg.label}
+                </span>
+              );
+            })()}
           </div>
         </div>
 

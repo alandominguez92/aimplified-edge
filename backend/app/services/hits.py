@@ -28,9 +28,18 @@ _STATS_TTL = 3600.0
 _RECENT_DAYS = 10
 _RECENT_MIN_AB = 15
 _TOP_N = 20
-_hits_cache: dict[str, tuple[float, list[PitcherProp]]] = {}
+_hits_cache: dict[str, tuple[float, list[PitcherProp], float | None]] = {}
 _stats_cache: dict[int, tuple[float, dict, dict]] = {}
 _recent_cache: dict[str, tuple[float, dict, dict]] = {}
+# Last SGO hits response that had entries, per date — reused (flagged stale) when
+# a fetch comes back empty so the odds-driven hits board doesn't blank out.
+_last_sgo: dict[str, tuple[float, dict]] = {}
+
+
+def hits_odds_as_of(date: str) -> float | None:
+    """Epoch time of the odds behind the last-built hits slate, else None if fresh."""
+    entry = _hits_cache.get(date)
+    return entry[2] if entry else None
 
 
 async def _hitting_stats(season: int) -> tuple[dict, dict]:
@@ -162,6 +171,14 @@ async def build_hits_slate(date: str, season: int) -> list[PitcherProp]:
         return cached[1]
 
     sgo = await fetch_hits_slate(date)
+    # Odds resilience: reuse the last non-empty SGO response if this one is empty
+    # (rate-limited), flagged stale, so the odds-driven board doesn't go blank.
+    odds_as_of: float | None = None
+    if sgo:
+        _last_sgo[date] = (time.time(), sgo)
+    elif date in _last_sgo:
+        odds_as_of, sgo = _last_sgo[date]
+
     by_name, by_il = await _hitting_stats(season)
     r_name, r_il = await _recent_form(date)
 
@@ -229,5 +246,5 @@ async def build_hits_slate(date: str, season: int) -> list[PitcherProp]:
         prop.projection.last5_k = last5.get(pid, [])
         props.append(prop)
 
-    _hits_cache[date] = (time.time(), props)
+    _hits_cache[date] = (time.time(), props, odds_as_of)
     return props

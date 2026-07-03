@@ -36,7 +36,13 @@ _RAW_TTL = 600.0
 # 5 min keeps the free tier comfortable while lines stay reasonably fresh.
 _SLATE_TTL = 300.0
 _raw_cache: dict[tuple[str, int], tuple[float, list[dict]]] = {}
-_slate_cache: dict[str, tuple[float, list["PitcherProp"]]] = {}
+# (fetch_ts, props, odds_as_of). odds_as_of is None when the slate carries fresh
+# odds, else the epoch time the reused (stale) odds were last fetched live.
+_slate_cache: dict[str, tuple[float, list["PitcherProp"], float | None]] = {}
+# Last odds response that actually had book lines, per date. When SportsGameOdds
+# fails (429/free-tier cap), we rebuild the slate fresh from StatsAPI but feed
+# these stale odds back in, so the board shows last-known lines instead of blank.
+_last_odds: dict[str, tuple[float, dict]] = {}
 
 
 def _slug(*parts: str) -> str:
@@ -131,6 +137,15 @@ async def _get_raw(date: str, season: int) -> list[dict]:
     return raw
 
 
+def slate_odds_as_of(date: str) -> float | None:
+    """Epoch time of the odds in the last-built slate, or None if they're fresh.
+
+    Endpoints read this to flag a stale-odds fallback in the response.
+    """
+    entry = _slate_cache.get(date)
+    return entry[2] if entry else None
+
+
 async def build_slate(date: str, season: int) -> list[PitcherProp]:
     hit = _slate_cache.get(date)
     if hit and time.time() - hit[0] < _SLATE_TTL:
@@ -138,6 +153,15 @@ async def build_slate(date: str, season: int) -> list[PitcherProp]:
 
     raw = await _get_raw(date, season)
     odds = await fetch_strikeout_props(date)
+
+    # Odds resilience: remember the last response that had lines; if this fetch
+    # came back empty (SGO down / rate-limited), reuse the last-known odds and
+    # mark the slate stale so projections stay fresh but lines don't vanish.
+    odds_as_of: float | None = None
+    if odds:
+        _last_odds[date] = (time.time(), odds)
+    elif date in _last_odds:
+        odds_as_of, odds = _last_odds[date]
 
     props: list[PitcherProp] = []
     pitcher_ids: dict[str, int] = {}
@@ -186,7 +210,7 @@ async def build_slate(date: str, season: int) -> list[PitcherProp]:
         )
 
     results.log_picks(date, props, pitcher_ids)
-    _slate_cache[date] = (time.time(), props)
+    _slate_cache[date] = (time.time(), props, odds_as_of)
     return props
 
 

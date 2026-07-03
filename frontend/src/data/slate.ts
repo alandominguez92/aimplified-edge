@@ -254,7 +254,8 @@ const MOCK: PitcherProp[] = [
 
 export interface SlateResult {
   props: PitcherProp[];
-  source: "live" | "mock";
+  source: "live" | "mock" | "stale";
+  asOf?: string | null; // ISO time the odds were last fetched live (stale only)
 }
 
 /**
@@ -274,8 +275,10 @@ export async function getSlate(
       const props = (await res.json()) as PitcherProp[];
       // A successful response is authoritative even when empty — e.g. once every
       // game has finished for the day the board should go empty, not fall back to
-      // the stale mock fixture.
-      return { props, source: "live" };
+      // the stale mock fixture. The backend flags a stale-odds fallback (odds
+      // reused because the live feed was down) via the X-Odds-As-Of header.
+      const asOf = res.headers.get("X-Odds-As-Of");
+      return { props, source: asOf ? "stale" : "live", asOf };
     }
   } catch {
     // backend down — fall through
