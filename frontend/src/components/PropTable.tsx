@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { Book, BookOdds, Market, PitcherProp } from "../types.ts";
 import { marketLabels } from "../lib/market.ts";
 import { evalProp } from "../lib/ev.ts";
@@ -6,7 +6,7 @@ import { PropRow, GRID } from "./PropRow.tsx";
 
 const BOOKS: Book[] = ["FanDuel", "DraftKings", "Caesars", "ESPN BET"];
 
-type SortKey = "time" | "ev" | "edge" | "line" | "sharp";
+type SortKey = "hot" | "time" | "ev" | "edge" | "line" | "sharp";
 
 interface Props {
   props: PitcherProp[];
@@ -21,6 +21,13 @@ export function PropTable({ props, market, selectedId, onSelect, onPick, isPicke
   const [sort, setSort] = useState<SortKey>("time");
   const [query, setQuery] = useState("");
 
+  // Each market gets a sensible default: hits opens on the hottest bats, the
+  // strikeout board on game time. Fires only when the market toggles, so a
+  // manual sort choice sticks within a market.
+  useEffect(() => {
+    setSort(market === "hits" ? "hot" : "time");
+  }, [market]);
+
   const sorted = useMemo(() => {
     const copy = [...props];
     if (sort === "ev") {
@@ -33,6 +40,9 @@ export function PropTable({ props, market, selectedId, onSelect, onPick, isPicke
     }
     copy.sort((a, b) => {
       switch (sort) {
+        case "hot":
+          // hottest L10 AVG first; anything without recent form sinks
+          return (b.l10Avg ?? -Infinity) - (a.l10Avg ?? -Infinity);
         case "edge":
           return Math.abs(b.projection.edge) - Math.abs(a.projection.edge);
         case "line":
@@ -86,6 +96,9 @@ export function PropTable({ props, market, selectedId, onSelect, onPick, isPicke
         <span className="uppercase tracking-wide text-neutral">Sort</span>
         {(
           [
+            ...(market === "hits"
+              ? ([["hot", "Hottest"]] as [SortKey, string][])
+              : []),
             ["time", "Game time"],
             ["ev", "EV"],
             ["edge", "Projection edge"],
