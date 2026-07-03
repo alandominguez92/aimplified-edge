@@ -109,6 +109,8 @@ export function App() {
         line: data.line,
         odds: data.odds,
         trueProb: probForSide(prop.projection, data.line, side),
+        market: prop.market ?? "strikeouts",
+        last5: prop.projection.last5K,
       };
       // one side per pitcher in the slip; replace any opposite side
       return [...cur.filter((p) => p.propId !== prop.id), pick];

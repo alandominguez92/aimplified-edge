@@ -60,8 +60,11 @@ export function PropRow({ prop, selected, onSelect, onPick, isPicked }: Props) {
           </div>
         </div>
 
-        {/* hover mini stat card (pitcher last-5; batters have no last-5 data) */}
-        {prop.projection.last5K.length > 0 && <MiniCard prop={prop} />}
+        {/* hover mini stat card — pitcher-only (park/weather + K labels); the
+            batter last-5 history surfaces in the parlay slip instead */}
+        {prop.market !== "hits" && prop.projection.last5K.length > 0 && (
+          <MiniCard prop={prop} />
+        )}
       </div>
 
       {/* model edge */}

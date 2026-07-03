@@ -101,6 +101,8 @@ export interface ParlayPick {
   line: number;
   odds: number;
   trueProb: number; // model probability for this leg
+  market: Market; // "strikeouts" | "hits" — what the history represents
+  last5: number[]; // last 5 games of the relevant stat, oldest -> newest
 }
 
 export interface PitcherProp {

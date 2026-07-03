@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import type { ParlayEval, ParlayPick } from "../types.ts";
+import type { Market, ParlayEval, ParlayPick } from "../types.ts";
 import { getParlay } from "../data/slate.ts";
 import { americanToDecimal, expectedValue } from "../lib/odds.ts";
 import { fmtOdds, fmtPct, fmtSignedPct } from "../lib/format.ts";
@@ -107,6 +107,12 @@ export function ParlaySlip({ picks, onRemove, onClear }: Props) {
                   <div className="tabular text-[11px] text-ink-dim">
                     {p.side.toUpperCase()} {p.line} · {fmtOdds(p.odds)} · {p.book}
                   </div>
+                  <LegHistory
+                    last5={p.last5}
+                    line={p.line}
+                    side={p.side}
+                    market={p.market}
+                  />
                 </div>
                 <button
                   onClick={() => onRemove(p.propId, p.side)}
@@ -163,6 +169,52 @@ export function ParlaySlip({ picks, onRemove, onClear }: Props) {
           />
         </div>
       )}
+    </div>
+  );
+}
+
+/** Last-5-game history for a leg: bars of the relevant stat (K or hits),
+ *  green where the game would have cashed the chosen side. */
+function LegHistory({
+  last5,
+  line,
+  side,
+  market,
+}: {
+  last5: number[];
+  line: number;
+  side: "over" | "under";
+  market: Market;
+}) {
+  if (!last5 || last5.length === 0) {
+    return <div className="mt-1 text-[10px] text-neutral/50">No recent game log</div>;
+  }
+  const stat = market === "hits" ? "H" : "K";
+  const max = Math.max(...last5, 1);
+  const wins = last5.filter((v) => (side === "over" ? v > line : v < line)).length;
+  return (
+    <div className="mt-2">
+      <div className="mb-1 flex items-center justify-between text-[9px] uppercase tracking-wide text-neutral">
+        <span>Last {last5.length} · {stat}</span>
+        <span className="tabular text-ink-dim">
+          {wins}/{last5.length} {side} {line}
+        </span>
+      </div>
+      <div className="flex items-end gap-1 h-9">
+        {last5.map((v, i) => {
+          const win = side === "over" ? v > line : v < line;
+          return (
+            <div key={i} className="flex flex-1 flex-col items-center gap-0.5">
+              <div
+                className={`w-full rounded-sm ${win ? "bg-edge/70" : "bg-neutral/30"}`}
+                style={{ height: `${(v / max) * 100}%`, minHeight: "2px" }}
+                title={`Game ${i + 1}: ${v} ${stat}`}
+              />
+              <span className="tabular text-[8px] text-ink-dim">{v}</span>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }

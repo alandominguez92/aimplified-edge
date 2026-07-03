@@ -8,6 +8,7 @@ follow-up tier, mirroring how the strikeout board started.)
 """
 from __future__ import annotations
 
+import asyncio
 import math
 import time
 from datetime import datetime, timedelta
@@ -54,6 +55,7 @@ async def _hitting_stats(season: int) -> tuple[dict, dict]:
         if not name or g == 0:
             continue
         by_name[name] = {
+            "id": p.get("id"),
             "g": g,
             "ab": int(st.get("atBats", 0) or 0),
             "h": int(st.get("hits", 0) or 0),
@@ -104,6 +106,32 @@ async def _recent_form(date: str) -> tuple[dict, dict]:
     return by_name, by_il
 
 
+async def _last5_hits(pids: list[int], season: int) -> dict[int, list[int]]:
+    """Last-5-game hit totals per batter (oldest -> newest), for the parlay slip."""
+    async with httpx.AsyncClient() as client:
+        async def one(pid: int) -> list[int]:
+            data = await mlb_statsapi._get(
+                client, f"/people/{pid}",
+                hydrate=f"stats(group=[hitting],type=[gameLog],season={season})",
+            )
+            for block in data.get("people", [{}])[0].get("stats", []):
+                if (block.get("type") or {}).get("displayName") == "gameLog":
+                    hits = [
+                        int(s.get("stat", {}).get("hits", 0) or 0)
+                        for s in block.get("splits", [])
+                    ]
+                    return hits[-5:]
+            return []
+
+        results = await asyncio.gather(
+            *(one(p) for p in pids), return_exceptions=True
+        )
+    return {
+        pid: (r if isinstance(r, list) else [])
+        for pid, r in zip(pids, results)
+    }
+
+
 def _match(by_name: dict, by_il: dict, name: str) -> dict | None:
     if name in by_name:
         return by_name[name]
@@ -137,8 +165,9 @@ async def build_hits_slate(date: str, season: int) -> list[PitcherProp]:
     by_name, by_il = await _hitting_stats(season)
     r_name, r_il = await _recent_form(date)
 
-    # (recent_avg, prop) so we can keep only the hottest bats after the loop.
-    scored: list[tuple[float, PitcherProp]] = []
+    # (recent_avg, player_id, prop) so we can keep only the hottest bats after
+    # the loop, then fetch last-5 game logs for just those.
+    scored: list[tuple[float, int | None, PitcherProp]] = []
     for name, info in sgo.items():
         if info.get("finished"):
             continue  # game's over — drop the batter from the board
@@ -177,6 +206,7 @@ async def build_hits_slate(date: str, season: int) -> list[PitcherProp]:
         )
         scored.append((
             recent_avg,
+            stat.get("id"),
             PitcherProp(
                 id=prop_id, market="hits",
                 game_time=info["gameTime"] or f"{date}T00:00:00Z",
@@ -189,6 +219,15 @@ async def build_hits_slate(date: str, season: int) -> list[PitcherProp]:
 
     # Keep only the top-N hottest bats, hottest first.
     scored.sort(key=lambda t: -t[0])
-    props = [prop for _, prop in scored[:_TOP_N]]
+    top = scored[:_TOP_N]
+
+    # Fill each survivor's last-5 hit log (for the parlay-slip history strip).
+    pids = [pid for _, pid, _ in top if pid is not None]
+    last5 = await _last5_hits(pids, season) if pids else {}
+    props: list[PitcherProp] = []
+    for _, pid, prop in top:
+        prop.projection.last5_k = last5.get(pid, [])
+        props.append(prop)
+
     _hits_cache[date] = (time.time(), props)
     return props
