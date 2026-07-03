@@ -98,7 +98,16 @@ async def fetch_raw_slate(date: str, season: int) -> list[dict]:
         )
         abbrs = await fetch_team_abbrs(client, season)
 
-        games = [g for d in sched.get("dates", []) for g in d.get("games", [])]
+        # Drop games that have already finished so the board only shows pitchers
+        # who are still to pitch / in progress. StatsAPI marks completed games
+        # with abstractGameState "Final" (codedGameState "F"). Filtering here also
+        # skips the per-pitcher stat fetches for finished games.
+        games = [
+            g
+            for d in sched.get("dates", [])
+            for g in d.get("games", [])
+            if (g.get("status") or {}).get("abstractGameState") != "Final"
+        ]
 
         # Collect starters: (pitcher, his team id, opp team id, is_home, game)
         starters: list[dict] = []

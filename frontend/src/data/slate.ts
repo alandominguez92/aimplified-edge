@@ -272,7 +272,10 @@ export async function getSlate(
     const res = await fetch(url);
     if (res.ok) {
       const props = (await res.json()) as PitcherProp[];
-      if (props.length > 0) return { props, source: "live" };
+      // A successful response is authoritative even when empty — e.g. once every
+      // game has finished for the day the board should go empty, not fall back to
+      // the stale mock fixture.
+      return { props, source: "live" };
     }
   } catch {
     // backend down — fall through

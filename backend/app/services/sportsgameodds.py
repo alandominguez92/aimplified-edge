@@ -231,13 +231,19 @@ def _ingest_hits_event(event: dict, result: dict[str, dict]) -> None:
         team_id = pdata.get("teamID")
         team, opp, is_home = team_map.get(team_id, ("?", "?", False))
         display = pdata.get("name") or name.title()
-        game_time = (event.get("status") or {}).get("startsAt", "")
+        status = event.get("status") or {}
+        game_time = status.get("startsAt", "")
+        # Once the game is over the batter is done — flag it so the slate drops
+        # finished players (SGO sets completed/ended/finalized on final events).
+        finished = bool(
+            status.get("completed") or status.get("ended") or status.get("finalized")
+        )
         fallback_line = odd.get("bookOverUnder")
 
         entry = result.setdefault(
             name,
             {"name": display, "team": team, "opponent": opp, "isHome": is_home,
-             "gameTime": game_time, "books": {}},
+             "gameTime": game_time, "finished": finished, "books": {}},
         )
         for book_id, bk in (odd.get("byBookmaker") or {}).items():
             book = BOOK_MAP.get(book_id)

@@ -92,6 +92,8 @@ async def build_hits_slate(date: str, season: int) -> list[PitcherProp]:
 
     props: list[PitcherProp] = []
     for name, info in sgo.items():
+        if info.get("finished"):
+            continue  # game's over — drop the batter from the board
         stat = _match(by_name, by_il, name)
         if stat is None:
             continue

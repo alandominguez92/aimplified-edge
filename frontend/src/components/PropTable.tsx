@@ -140,7 +140,9 @@ export function PropTable({ props, market, selectedId, onSelect, onPick, isPicke
         ))}
         {filtered.length === 0 && (
           <div className="px-4 py-10 text-center text-sm text-ink-dim">
-            No {marketLabels(market).player.toLowerCase()}s match “{query}”.
+            {query
+              ? `No ${marketLabels(market).player.toLowerCase()}s match “${query}”.`
+              : "No active games right now — finished games drop off the board."}
           </div>
         )}
       </div>
